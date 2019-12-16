@@ -1,21 +1,20 @@
-# Builder container
-FROM registry.cn-hangzhou.aliyuncs.com/aliware2018/services AS builder
+# Use an official Python runtime as a parent image
+FROM python:2.7-slim
 
-COPY . /root/workspace/agent
-WORKDIR /root/workspace/agent
-RUN set -ex && mvn clean package
+# Set the working directory to /app
+WORKDIR /app
 
+# Copy the current directory contents into the container at /app
+ADD . /app
 
-# Runner container
-FROM registry.cn-hangzhou.aliyuncs.com/aliware2018/debian-jdk8
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
-COPY --from=builder /root/workspace/services/mesh-provider/target/mesh-provider-1.0-SNAPSHOT.jar /root/dists/mesh-provider.jar
-COPY --from=builder /root/workspace/services/mesh-consumer/target/mesh-consumer-1.0-SNAPSHOT.jar /root/dists/mesh-consumer.jar
-COPY --from=builder /root/workspace/agent/mesh-agent/target/mesh-agent-1.0-SNAPSHOT.jar /root/dists/mesh-agent.jar
+# Make port 80 available to the world outside this container
+EXPOSE 80
 
-COPY --from=builder /usr/local/bin/docker-entrypoint.sh /usr/local/bin
-COPY start-agent.sh /usr/local/bin
+# Define environment variable
+ENV NAME World
 
-RUN set -ex && mkdir -p /root/logs
-
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Run app.py when the container launches
+CMD ["python", "app.py"]
